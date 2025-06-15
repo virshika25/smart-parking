@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book Parking Slot - Smart Vehicle Parking</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+  }
+  header {
+    background-color: #2E8B57;
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    font-size: 22px;
+    border-radius: 0 0 10px 10px;
+  }
+  .container {
+    max-width: 500px;
+    margin: 30px auto;
+    background: white;
+    padding: 25px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  button {
+    margin-top: 25px;
+    width: 100%;
+    padding: 14px;
+    background-color: #2E8B57;
+    color: white;
+    border: none;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #246b43;
+  }
+  .qr-section {
+    margin-top: 30px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>Book Parking Slot</header>
+
+<div class="container">
+  <!-- 🔙 Back Button -->
+  <div style="margin-bottom: 15px;">
+    <a href="customer_dashboard.html" style="text-decoration:none;">
+      <button type="button" style="background-color:#ccc; color:#000; width:auto; padding:8px 16px; font-size:14px;">
+        ← Back to Dashboard
+      </button>
+    </a>
+  </div>
+
+  <form id="bookingForm" novalidate>
+    <label for="vehicleNumber">Vehicle Number:</label>
+    <input type="text" id="vehicleNumber" name="vehicleNumber" placeholder="Enter vehicle number" required />
+
+    <label for="vehicleType">Vehicle Type:</label>
+    <select id="vehicleType" name="vehicleType" required>
+      <option value="">-- Select Vehicle Type --</option>
+      <option value="Car">Car</option>
+      <option value="Bike">Bike</option>
+      <option value="Truck">Truck</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <button type="submit">Book Now</button>
+  </form>
+
+  <div class="qr-section" id="qrSection" style="display:none;">
+    <h3>Your Booking QR Code</h3>
+    <div id="qrcode"></div>
+    <p><strong>Booking ID:</strong> <span id="bookingId"></span></p>
+  </div>
+</div>
+
+<!-- QR Code Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+  const form = document.getElementById('bookingForm');
+  const qrSection = document.getElementById('qrSection');
+  const bookingIdSpan = document.getElementById('bookingId');
+  let qrcode;
+
+  // Check user login
+  const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+  if (!loggedInUser) {
+    alert('Please login first!');
+    window.location.href = 'customer_login.html';
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const vehicleNumber = form.vehicleNumber.value.trim();
+    const vehicleType = form.vehicleType.value;
+
+    if (!vehicleNumber) {
+      alert('Please enter your vehicle number.');
+      return;
+    }
+    if (!vehicleType) {
+      alert('Please select vehicle type.');
+      return;
+    }
+
+    const bookingId = 'BK' + Date.now();
+
+    const bookingData = {
+      bookingId,
+      username: loggedInUser.username,
+      vehicleNumber,
+      vehicleType,
+      bookingTime: new Date().toLocaleString()
+    };
+
+    let bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+    bookings.push(bookingData);
+    localStorage.setItem('bookings', JSON.stringify(bookings));
+
+    bookingIdSpan.textContent = bookingId;
+
+    if (qrcode) {
+      qrcode.clear();
+    } else {
+      qrcode = new QRCode(document.getElementById("qrcode"), {
+        width: 180,
+        height: 180
+      });
+    }
+
+    qrcode.makeCode(JSON.stringify(bookingData));
+    qrSection.style.display = 'block';
+  });
+</script>
+
+</body>
+</html>

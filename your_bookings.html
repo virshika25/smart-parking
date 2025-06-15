@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Bookings – Smart Parking</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background: #333;
+      padding: 18px;
+      color: #fff;
+      font-size: 22px;
+      text-align: center;
+    }
+    main {
+      max-width: 1100px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #0d3b66;
+      font-size: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      padding: 14px 10px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+    th {
+      background: #d64b06;
+      color: #fff;
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background: #f3f3f3;
+    }
+    .download-btn {
+      padding: 6px 18px;
+      background: #04795b;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>// BOOKING //</header>
+
+<main>
+  <h2>Slot Booking Cost</h2>
+
+  <table id="bookingsTable">
+    <thead>
+      <tr>
+        <th>Parking Date</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Slot Name</th>
+        <th>Booking Time</th>
+        <th>Parking Cost</th>
+        <th>Download Ticket</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</main>
+
+<script>
+  // Fetch all stored bookings from localStorage
+  const bookings = JSON.parse(localStorage.getItem('allBookings') || '[]');
+  const tbody = document.querySelector('#bookingsTable tbody');
+
+  if (bookings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7">No bookings yet.</td></tr>';
+  } else {
+    bookings.forEach(b => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${b.date || ''}</td>
+        <td>${b.time || ''}</td>
+        <td>${calcEndTime(b.time, b.hours)}</td>
+        <td>Slot ${b.slot}</td>
+        <td>${b.bookingTime || ''}</td>
+        <td>${b.cost || ''}</td>
+        <td><button class="download-btn" onclick="window.open('ticket.html','_blank')">DOWNLOAD</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Calculate end time based on start and duration
+  function calcEndTime(start, hrs) {
+    if (!start || !hrs) return '';
+    const [h, m] = start.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h);
+    d.setMinutes(m);
+    d.setHours(d.getHours() + parseInt(hrs, 10));
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Login - Smart Parking</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    /* Background image with center & cover */
+    background: url('https://static.vecteezy.com/system/resources/previews/000/834/543/non_2x/isometric-smart-car-website-vector.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    height: 100vh;
+
+    /* Flex to center the form */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+    position: relative;
+  }
+
+  /* Overlay for better readability */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.85);
+    z-index: 0;
+  }
+
+  .login-box {
+    position: relative; /* so it's above the overlay */
+    background: white;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 320px;
+    z-index: 1;
+  }
+  h2 {
+    margin-bottom: 20px;
+    color: #2E8B57;
+    text-align: center;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+  }
+  input[type=text], input[type=password] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+  button {
+    margin-top: 25px;
+    width: 100%;
+    padding: 12px;
+    background: #2E8B57;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #246b43;
+  }
+  .error-message {
+    color: red;
+    margin-top: 15px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <h2>Admin Login</h2>
+  <form id="adminLoginForm" novalidate>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" placeholder="Enter username" required />
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" placeholder="Enter password" required />
+
+    <button type="submit">Login</button>
+    <div id="error" class="error-message"></div>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById('adminLoginForm');
+  const errorDiv = document.getElementById('error');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault(); // prevent form default submission
+
+    const username = form.username.value.trim();
+    const password = form.password.value.trim();
+
+    // Clear previous error
+    errorDiv.textContent = '';
+
+    // Simple validation
+    if(username === '' || password === '') {
+      errorDiv.textContent = 'Please enter both username and password.';
+      return;
+    }
+
+    // Check credentials (hardcoded for demo)
+    if(username === 'admin' && password === 'admin123') {
+      alert('Login successful!');
+      // Redirect to dashboard page (to be created)
+      window.location.href = 'admin_dashboard.html';
+    } else {
+      errorDiv.textContent = 'Invalid username or password.';
+    }
+  });
+</script>
+
+</body>
+</html>

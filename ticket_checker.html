@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket Checker - Smart Parking</title>
+
+  <!-- html5‑qrcode library (2.3.x) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Verdana,sans-serif}
+    body{display:flex;flex-direction:column;min-height:100vh;background:#f4f4f4;color:#333}
+
+    /* ---------- header ---------- */
+    header{background:#2E8B57;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+    .header-title{font-size:24px;font-weight:700}
+    .header-links{display:flex;gap:20px}
+    .header-links a{color:#fff;text-decoration:none;font-weight:700;font-size:16px;transition:.3s}
+    .header-links a:hover{color:#c3e6cb}
+
+    /* ---------- main ---------- */
+    main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:30px}
+
+    #reader{width:320px;height:320px;border:4px solid #2E8B57;border-radius:8px}
+    #result{margin-top:20px;font-size:18px;font-weight:600;text-align:center}
+
+    .btn{background:#2E8B57;color:#fff;padding:10px 26px;border:none;border-radius:25px;font-size:16px;cursor:pointer;transition:.3s;margin-top:10px}
+    .btn:hover{background:#246b43}
+
+    footer{text-align:center;padding:15px;background:#2E8B57;color:#fff}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">Smart Vehicle Parking - Ticket Checker</div>
+  <div class="header-links">
+    <a href="index.html">Home</a>
+    <a href="ticket_checker.html">Checker Parking Ticket</a>
+    <a href="index.html">Logout</a>
+  </div>
+</header>
+
+<main>
+  <div id="reader"> <!-- camera feed will appear here --> </div>
+  <div id="result"></div>
+  <button class="btn" id="startBtn">Start Scanner</button>
+</main>
+
+<footer>
+  &copy; 2025 Smart Vehicle Parking System | All rights reserved.
+</footer>
+
+<script>
+  const resultDiv = document.getElementById('result');
+  const startBtn  = document.getElementById('startBtn');
+  const html5Qr   = new Html5Qrcode("reader");   // create scanner instance
+  let isRunning   = false;
+
+  const bookings  = JSON.parse(localStorage.getItem('allBookings') || '[]');
+
+  startBtn.onclick = () => {
+    if (isRunning) return;              // prevent double start
+    isRunning = true;
+    resultDiv.textContent = "Scanning...";
+    html5Qr.start(
+      { facingMode: "environment" },    // use rear camera when possible
+      { fps: 10, qrbox: 250 },
+      onScanSuccess,
+      onScanFailure
+    ).catch(err => {
+      resultDiv.textContent = "Camera start error: " + err;
+      isRunning = false;
+    });
+  };
+
+  // Fired on every successful scan
+  function onScanSuccess(decodedText) {
+    html5Qr.stop();                     // stop the camera
+    isRunning = false;
+
+    // We expect Booking ID inside the QR text – example: "Booking ID: B1234"
+    const match = decodedText.match(/Booking\\s*ID\\s*:\\s*(B\\d+)/i);
+    const bookingId = match ? match[1] : null;
+
+    if (!bookingId) {
+      resultDiv.textContent = "QR does not contain a Booking ID.";
+      return;
+    }
+
+    const found = bookings.find(b => b.bookingId === bookingId);
+
+    if (found) {
+      resultDiv.style.color = "green";
+      resultDiv.innerHTML = `
+        ✅ Ticket Verified<br/>
+        Booking ID: <strong>${found.bookingId}</strong><br/>
+        Slot: <strong>${found.slot}</strong><br/>
+        Date: <strong>${found.date}</strong><br/>
+        Cost: <strong>₹${found.cost}</strong>
+      `;
+    } else {
+      resultDiv.style.color = "red";
+      resultDiv.textContent = "❌ Ticket NOT Found!";
+    }
+  }
+
+  // Optional: handle scan failures (not required, but useful for verbose logging)
+  function onScanFailure(error) {
+    // You can console.log(error) if you want continuous debug info
+  }
+</script>
+
+</body>
+</html>

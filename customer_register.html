@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Customer Registration - Smart Vehicle Parking</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    height: 100vh;
+
+    /* Background image */
+    background: url('https://static.vecteezy.com/system/resources/previews/000/834/543/non_2x/isometric-smart-car-website-vector.jpg') no-repeat center center fixed;
+    background-size: cover;
+
+    /* Center form */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    position: relative;
+  }
+
+  /* White semi-transparent overlay for readability */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.85);
+    z-index: 0;
+  }
+
+  .register-box {
+    position: relative; /* above overlay */
+    background: white;
+    color: #333;
+    padding: 30px 40px;
+    border-radius: 10px;
+    width: 350px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 1;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2E8B57;
+  }
+  label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  button {
+    margin-top: 25px;
+    width: 100%;
+    padding: 12px;
+    background: #2E8B57;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #246b43;
+  }
+  .message {
+    margin-top: 15px;
+    color: red;
+    text-align: center;
+  }
+  .back-link {
+    margin-top: 15px;
+    text-align: center;
+  }
+  .back-link a {
+    color: #2E8B57;
+    text-decoration: none;
+  }
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<div class="register-box">
+  <h2>Customer Registration</h2>
+  <form id="registerForm" novalidate>
+    <label for="name">Full Name:</label>
+    <input type="text" id="name" name="name" placeholder="Your full name" required />
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" placeholder="Your email" required />
+
+    <label for="phone">Phone Number:</label>
+    <input type="text" id="phone" name="phone" placeholder="10-digit phone" required maxlength="10" />
+
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" placeholder="Choose a username" required />
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" placeholder="Create a password" required />
+
+    <button type="submit">Register</button>
+    <div class="message" id="message"></div>
+  </form>
+  <div class="back-link">
+    <a href="index.html">Back to Home</a>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('registerForm');
+  const messageDiv = document.getElementById('message');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    messageDiv.textContent = '';
+
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const phone = form.phone.value.trim();
+    const username = form.username.value.trim();
+    const password = form.password.value.trim();
+
+    if (!name || !email || !phone || !username || !password) {
+      messageDiv.textContent = 'Please fill all fields.';
+      return;
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      messageDiv.textContent = 'Phone number must be 10 digits.';
+      return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+
+    if (users.some(u => u.username === username)) {
+      messageDiv.textContent = 'Username already taken.';
+      return;
+    }
+
+    users.push({ name, email, phone, username, password });
+    localStorage.setItem('users', JSON.stringify(users));
+
+    alert('Registration successful! You can now login.');
+    window.location.href = 'customer_login.html';
+  });
+</script>
+
+</body>
+</html>
