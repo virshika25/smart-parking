@@ -8,7 +8,6 @@
     header{background:#333;color:#fff;padding:18px;text-align:center;font-size:22px}
     main{max-width:900px;margin:40px auto;padding:40px;background:#fff;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.1)}
     h1{margin:0 0 40px;color:#0d3b66;font-size:36px}
-    /* ticket card */
     .ticket-card{border:4px solid #d64b06;border-radius:8px;padding:30px;display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
     .ticket-left{flex:1}
     .ticket-left h2{margin:0 0 18px;color:#0d3b66;font-size:26px}
@@ -21,6 +20,7 @@
 </head>
 <body>
 <header>// BOOKING //</header>
+
 <main>
   <h1>Booking Ticket</h1>
 
@@ -40,51 +40,72 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-  // get latest ticket from localStorage
   const ticket = JSON.parse(localStorage.getItem('latestTicket'));
-  if(!ticket){
-    document.getElementById('ticketDetails').innerHTML='<p>No ticket found.</p>';
-  }else{
-    // compute end time
-    const endTime = calcEnd(ticket.time, ticket.hours);
-    const html = `
-      <p><strong>Date:</strong> ${ticket.date}</p>
-      <p><strong>Time:</strong> ${formatTime(ticket.time)} – ${endTime}</p>
-      <p><strong>Location:</strong> Slot ${ticket.slot}</p>
-      <p><strong>Cost:</strong> Rs. ${ticket.cost}</p>
-    `;
-    document.getElementById('ticketDetails').innerHTML = html;
 
-    // QR code data
-    const qrData = `Booking ID: ${ticket.bookingId}\nSlot: ${ticket.slot}\nDate: ${ticket.date}\nTime: ${ticket.time}-${endTime}\nCost: Rs.${ticket.cost}`;
-    new QRCode(document.getElementById('qrcode'), {text: qrData,width:160,height:160});
+  function formatTime(t){
+    const [h,m]=t.split(':');
+    const d=new Date();d.setHours(h);d.setMinutes(m);
+    return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }
-
-  // helper to add hours to time string HH:MM
   function calcEnd(start,hours){
     if(!start||!hours) return '';
-    const [h,m] = start.split(':').map(Number);
+    const [h,m]=start.split(':').map(Number);
     const d=new Date();d.setHours(h);d.setMinutes(m);
     d.setHours(d.getHours()+parseInt(hours,10));
     return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }
-  function formatTime(t){
-    const [h,m]=t.split(':');
-    const date=new Date();date.setHours(h);date.setMinutes(m);
-    return date.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  /* ---------- Render ticket info ---------- */
+  function renderTicket(){
+    const infoDiv=document.getElementById('ticketDetails');
+    if(!ticket){
+      infoDiv.innerHTML='<p>No ticket found.</p>';
+      return;
+    }
+    const end=calcEnd(ticket.time,ticket.hours);
+    infoDiv.innerHTML=`
+      <p><strong>Date:</strong> ${ticket.date}</p>
+      <p><strong>Time:</strong> ${formatTime(ticket.time)} – ${end}</p>
+      <p><strong>Location:</strong> Slot ${ticket.slot}</p>
+      <p><strong>Cost:</strong> Rs. ${ticket.cost}</p>
+    `;
+
+    /* Generate QR */
+    const qrContainer=document.getElementById('qrcode');
+    qrContainer.innerHTML='';                       // clear old
+    const qrData=`Booking ID: ${ticket.bookingId}
+Slot: ${ticket.slot}
+Date: ${ticket.date}
+Time: ${ticket.time}-${end}
+Cost: Rs.${ticket.cost}`;
+    // qrcodejs renders instantly, but to be safe we listen for image load
+    const qrcode=new QRCode(qrContainer,{
+      text:qrData,width:160,height:160,
+      correctLevel:QRCode.CorrectLevel.M
+    });
   }
 
-  // download ticket as PDF using html2canvas + jsPDF
-  document.getElementById('downloadBtn').addEventListener('click',()=>{
+  /* ---------- PDF download ---------- */
+  async function downloadPDF(){
     const area=document.getElementById('ticketArea');
-    html2canvas(area).then(canvas=>{
+
+    // small delay ensures QR canvas <img> fully painted
+    await new Promise(r=>setTimeout(r,300));
+
+    html2canvas(area,{useCORS:true}).then(canvas=>{
       const imgData=canvas.toDataURL('image/png');
       const {jsPDF}=window.jspdf;
       const pdf=new jsPDF({orientation:'p',unit:'px',format:[canvas.width,canvas.height+40]});
       pdf.addImage(imgData,'PNG',0,0,canvas.width,canvas.height);
-      pdf.save('Parking_Ticket_'+(ticket?ticket.bookingId:'')+'.pdf');
+      pdf.save(`Parking_Ticket_${ticket?ticket.bookingId:''}.pdf`);
     });
-  });
+  }
+
+  /* ---------- Init ---------- */
+  window.onload=()=>{
+    renderTicket();
+    document.getElementById('downloadBtn').addEventListener('click',downloadPDF);
+  };
 </script>
 </body>
 </html>
