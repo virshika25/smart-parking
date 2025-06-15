@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Parking Ticket Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 30px;
+    }
+    h2 {
+      color: #2E8B57;
+    }
+    #reader {
+      width: 300px;
+      margin: auto;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .btn {
+      background-color: #2E8B57;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 16px;
+      margin-top: 20px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Scan Parking Ticket QR Code</h2>
+  <div id="reader"></div>
+  <div id="result">Waiting for scan...</div>
+
+  <a href="index.html" class="btn">Back to Home</a>
+
+  <script>
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById('result').innerText = "Valid Ticket: " + decodedText;
+      html5QrcodeScanner.clear();
+    }
+
+    function onScanFailure(error) {
+      // No action needed
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader", { fps: 10, qrbox: 250 });
+
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
+
+</body>
+</html>

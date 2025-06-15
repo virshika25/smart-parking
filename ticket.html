@@ -4,18 +4,27 @@
   <meta charset="UTF-8">
   <title>Booking Ticket – Smart Parking</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f5f5}
-    header{background:#333;color:#fff;padding:18px;text-align:center;font-size:22px}
-    main{max-width:900px;margin:40px auto;padding:40px;background:#fff;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.1)}
-    h1{margin:0 0 40px;color:#0d3b66;font-size:36px}
-    .ticket-card{border:4px solid #d64b06;border-radius:8px;padding:30px;display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
-    .ticket-left{flex:1}
-    .ticket-left h2{margin:0 0 18px;color:#0d3b66;font-size:26px}
-    .info{font-size:18px;line-height:1.8}
-    .qr-wrap{width:160px;height:160px;display:flex;align-items:center;justify-content:center}
-    #qrcode{width:160px;height:160px}
-    #downloadBtn{display:block;margin:35px auto 0;padding:12px 28px;background:#04795b;color:#fff;border:none;border-radius:6px;font-size:18px;cursor:pointer}
-    #downloadBtn:hover{background:#035f47}
+    body {font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f5f5f5;}
+    header {background:#333; color:#fff; padding:18px; text-align:center; font-size:22px;}
+    main   {max-width:900px; margin:40px auto; padding:40px;
+            background:#fff; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,.1);}
+    h1     {margin:0 0 40px; color:#0d3b66; font-size:36px;}
+
+    .ticket-card {border:4px solid #d64b06; border-radius:8px; padding:30px;
+                  display:flex; justify-content:space-between; align-items:flex-start; gap:30px;}
+    .ticket-left h2 {margin:0 0 18px; color:#0d3b66; font-size:26px;}
+    .info {font-size:18px; line-height:1.8;}
+
+    .qr-wrap {width:160px; height:160px; display:flex; align-items:center; justify-content:center;}
+    #qrcode {width:160px; height:160px;}
+
+    button    {display:block; margin:35px auto 0; padding:12px 28px;
+               background:#04795b; color:#fff; border:none; border-radius:6px;
+               font-size:18px; cursor:pointer;}
+    button:hover {background:#035f47;}
+
+    /* slight spacing between the two buttons */
+    #downloadQRBtn {margin-top:15px;}
   </style>
 </head>
 <body>
@@ -32,7 +41,8 @@
     <div class="qr-wrap"><div id="qrcode"></div></div>
   </div>
 
-  <button id="downloadBtn">DOWNLOAD</button>
+  <button id="downloadBtn">DOWNLOAD TICKET (PDF)</button>
+  <button id="downloadQRBtn">DOWNLOAD QR CODE (PNG)</button>
 </main>
 
 <!-- libs -->
@@ -42,28 +52,29 @@
 <script>
   const ticket = JSON.parse(localStorage.getItem('latestTicket'));
 
+  /* ---------- helpers ---------- */
   function formatTime(t){
-    const [h,m]=t.split(':');
-    const d=new Date();d.setHours(h);d.setMinutes(m);
+    const [h,m] = t.split(':');
+    const d = new Date(); d.setHours(h); d.setMinutes(m);
     return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }
   function calcEnd(start,hours){
     if(!start||!hours) return '';
-    const [h,m]=start.split(':').map(Number);
-    const d=new Date();d.setHours(h);d.setMinutes(m);
+    const [h,m] = start.split(':').map(Number);
+    const d = new Date(); d.setHours(h); d.setMinutes(m);
     d.setHours(d.getHours()+parseInt(hours,10));
     return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }
 
-  /* ---------- Render ticket info ---------- */
+  /* ---------- Render ticket info & QR ---------- */
   function renderTicket(){
-    const infoDiv=document.getElementById('ticketDetails');
+    const infoDiv = document.getElementById('ticketDetails');
     if(!ticket){
-      infoDiv.innerHTML='<p>No ticket found.</p>';
+      infoDiv.innerHTML = '<p>No ticket found.</p>';
       return;
     }
-    const end=calcEnd(ticket.time,ticket.hours);
-    infoDiv.innerHTML=`
+    const end = calcEnd(ticket.time,ticket.hours);
+    infoDiv.innerHTML = `
       <p><strong>Date:</strong> ${ticket.date}</p>
       <p><strong>Time:</strong> ${formatTime(ticket.time)} – ${end}</p>
       <p><strong>Location:</strong> Slot ${ticket.slot}</p>
@@ -71,40 +82,66 @@
     `;
 
     /* Generate QR */
-    const qrContainer=document.getElementById('qrcode');
-    qrContainer.innerHTML='';                       // clear old
-    const qrData=`Booking ID: ${ticket.bookingId}
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';            // clear old
+    const qrData = `Booking ID: ${ticket.bookingId}
 Slot: ${ticket.slot}
 Date: ${ticket.date}
 Time: ${ticket.time}-${end}
 Cost: Rs.${ticket.cost}`;
-    // qrcodejs renders instantly, but to be safe we listen for image load
-    const qrcode=new QRCode(qrContainer,{
-      text:qrData,width:160,height:160,
-      correctLevel:QRCode.CorrectLevel.M
+    new QRCode(qrContainer,{
+      text: qrData,
+      width: 160,
+      height: 160,
+      correctLevel: QRCode.CorrectLevel.M
     });
   }
 
-  /* ---------- PDF download ---------- */
-  async function downloadPDF(){
-    const area=document.getElementById('ticketArea');
-
-    // small delay ensures QR canvas <img> fully painted
-    await new Promise(r=>setTimeout(r,300));
-
-    html2canvas(area,{useCORS:true}).then(canvas=>{
-      const imgData=canvas.toDataURL('image/png');
-      const {jsPDF}=window.jspdf;
-      const pdf=new jsPDF({orientation:'p',unit:'px',format:[canvas.width,canvas.height+40]});
-      pdf.addImage(imgData,'PNG',0,0,canvas.width,canvas.height);
-      pdf.save(`Parking_Ticket_${ticket?ticket.bookingId:''}.pdf`);
+  /* ---------- Save ticket area as PDF ---------- */
+  async function saveTicketPDF(){
+    const area = document.getElementById('ticketArea');
+    await new Promise(r => setTimeout(r, 300));   // wait for QR to render
+    const canvas = await html2canvas(area, {useCORS:true});
+    const imgData = canvas.toDataURL('image/png');
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({
+      orientation:'p',
+      unit:'px',
+      format:[canvas.width, canvas.height+40]
     });
+    pdf.addImage(imgData,'PNG',0,0,canvas.width,canvas.height);
+    pdf.save(`Parking_Ticket_${ticket ? ticket.bookingId : Date.now()}.pdf`);
+  }
+
+  /* ---------- Save only the QR as PNG ---------- */
+  function saveQR(){
+    const qrImg = document.querySelector('#qrcode img') ||
+                  document.querySelector('#qrcode canvas');
+    if(!qrImg){
+      alert('QR code not generated yet!');
+      return;
+    }
+    const link = document.createElement('a');
+    link.download = `Parking_QR_${ticket ? ticket.bookingId : Date.now()}.png`;
+    link.href = qrImg.src ? qrImg.src : qrImg.toDataURL('image/png');
+    link.click();
   }
 
   /* ---------- Init ---------- */
-  window.onload=()=>{
+  window.onload = () => {
     renderTicket();
-    document.getElementById('downloadBtn').addEventListener('click',downloadPDF);
+
+    // 1. PDF download + redirect home
+    document.getElementById('downloadBtn').addEventListener('click', async () => {
+      await saveTicketPDF();
+      setTimeout(() => window.location.href = 'index.html', 2000); // 2‑sec delay
+    });
+
+    // 2. QR‑only download + redirect home
+    document.getElementById('downloadQRBtn').addEventListener('click', () => {
+      saveQR();
+      setTimeout(() => window.location.href = 'index.html', 2000);
+    });
   };
 </script>
 </body>
