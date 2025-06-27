@@ -1,77 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>QR Parking Ticket Scanner</title>
-
-  <!-- html5‑qrcode (minified, v2.3.9) -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
-
+  <meta charset="UTF-8" />
+  <title>QR Code Parking Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    body   {font-family: Arial, sans-serif; text-align: center;
-            background:#f4f4f4; padding:30px;}
-    h2     {color:#2E8B57;}
-    #reader{width:320px; margin:auto;}
-    #result{margin-top:20px; font-weight:bold;}
-    .btn   {background:#2E8B57; color:#fff; padding:10px 20px; border:none;
-            border-radius:20px; font-size:16px; margin-top:20px;
-            display:inline-block; text-decoration:none;}
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+    }
+    #reader {
+      width: 300px;
+      margin: 0 auto;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: green;
+    }
   </style>
 </head>
 <body>
+  <h2>QR Code Parking Scanner</h2>
+  <div id="reader"></div>
+  <div id="result" class="result"></div>
 
-<h2>Scan Parking Ticket QR Code</h2>
-<div id="reader"></div>
-<div id="result">Waiting for scan…</div>
-
-<a href="index.html" class="btn">Back to Home</a>
-
-<script>
-  /* ---------- Scanner configuration ---------- */
-  const FPS          = 25;   // high FPS = faster detection
-  const QR_BOX_SIZE  = 300;  // should match #reader width
-  const qrRegionId   = "reader";
-  const html5qr      = new Html5Qrcode(qrRegionId);
-
-  /* ---------- Success callback ---------- */
-  function onScanSuccess(decodedText) {
-    document.getElementById("result").textContent =
-      "✅ Valid Ticket: " + decodedText;
-
-    html5qr.stop().catch(err => console.warn("Stop error:", err));
-
-    // Optional confirmation sound
-    new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play();
-  }
-
-  /* ---------- Start the camera & scanning ---------- */
-  Html5Qrcode.getCameras().then(cameras => {
-    if (!cameras || cameras.length === 0) {
-      document.getElementById("result").textContent = "❌ No camera found.";
-      return;
+  <script>
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("result").innerHTML = `✅ QR Code: ${decodedText}`;
+      html5QrcodeScanner.clear();
     }
 
-    const camId = cameras[0].id;  // choose the first (rear on phones)
-    html5qr.start(
-      { deviceId: { exact: camId } },
-      {
-        fps: FPS,
-        qrbox: QR_BOX_SIZE,
-        rememberLastUsedCamera: true
-      },
-      onScanSuccess,
-      /* onFailure = */ () => {}           // ignore frame failures
-    ).catch(err => {
-      console.error("Start error:", err);
-      document.getElementById("result").textContent =
-        "❌ Camera error – see console.";
-    });
-  }).catch(err => {
-    console.error("Camera list error:", err);
-    document.getElementById("result").textContent =
-      "❌ Unable to access camera.";
-  });
-</script>
+    function onScanFailure(error) {
+      // console.log(`Scan error: ${error}`);
+    }
 
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: 250 },
+      false
+    );
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
 </body>
 </html>
