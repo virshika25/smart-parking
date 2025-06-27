@@ -1,133 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin - User Details</title>
+  <meta charset="UTF-8" />
+  <title>All Bookings – Admin Panel</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #eef;
+      background: #f2f2f2;
       margin: 0;
       padding: 20px;
     }
-
-    header {
-      background-color: #333;
-      color: white;
-      padding: 15px 20px;
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .booking {
+      background: #fff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
     }
-
-    .buttons {
-      display: flex;
-      gap: 10px;
+    .details {
+      flex: 1;
+      min-width: 250px;
     }
-
-    .buttons button {
-      padding: 10px 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .details p {
+      margin: 5px 0;
     }
-
-    h2 {
+    .qr {
+      width: 120px;
+      height: 120px;
+    }
+    .no-booking {
       text-align: center;
-      margin-top: 30px;
-      color: #333;
-    }
-
-    table {
-      width: 80%;
-      margin: 20px auto;
-      border-collapse: collapse;
-      display: none;
-    }
-
-    th, td {
-      border: 1px solid #888;
-      padding: 10px;
-      text-align: center;
-    }
-
-    th {
-      background-color: #444;
-      color: white;
-    }
-
-    .view-btn {
-      display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: navy;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .view-btn:hover {
-      background-color: darkblue;
+      color: #777;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div><strong>// ADMINISTRATOR //</strong></div>
-    <div class="buttons">
-      <button onclick="location.href='home.html'">Home</button>
-      <button onclick="location.href='admin_user_details.html'">User Details</button>
-      <button onclick="location.href='admin_booking.html'">Bookings</button>
-      <button onclick="location.href='admin_logs.html'">Parking Logs</button>
-      <button onclick="location.href='index.html'">Logout</button>
-    </div>
-  </header>
+<h2>🛠 All Bookings – Admin Panel</h2>
+<div id="bookingList"></div>
 
-  <h2>Registered User Details</h2>
+<script>
+// Simulated allBookings array
+let allBookings = JSON.parse(localStorage.getItem("allTickets")) || [];
 
-  <button class="view-btn" onclick="showTable()">View Logged-In User</button>
+// If your system still uses latestTicket only:
+const latestTicket = JSON.parse(localStorage.getItem("latestTicket"));
+if (latestTicket) {
+  allBookings = [latestTicket];
+}
 
-  <table id="userTable">
-    <thead>
-      <tr>
-        <th>User ID</th>
-        <th>Username</th>
-        <th>Gender</th>
-        <th>Phone Number</th>
-      </tr>
-    </thead>
-    <tbody id="userData">
-      <!-- Dynamic user data will appear here -->
-    </tbody>
-  </table>
+const list = document.getElementById('bookingList');
 
-  <script>
-    function showTable() {
-      const user = JSON.parse(localStorage.getItem('loggedInUser'));
-      
-      if (!user) {
-        alert("No user is currently logged in.");
-        return;
-      }
+if (allBookings.length === 0) {
+  list.innerHTML = `<p class="no-booking">No bookings found.</p>`;
+} else {
+  allBookings.forEach((ticket, index) => {
+    const div = document.createElement('div');
+    div.className = 'booking';
 
-      const table = document.getElementById('userTable');
-      const tbody = document.getElementById('userData');
+    div.innerHTML = `
+      <div class="details">
+        <p><strong>Customer:</strong> ${ticket.username}</p>
+        <p><strong>Email:</strong> ${ticket.email}</p>
+        <p><strong>Slot:</strong> ${ticket.slot}</p>
+        <p><strong>Date:</strong> ${ticket.date}</p>
+        <p><strong>Time:</strong> ${ticket.time}</p>
+        <p><strong>Hours:</strong> ${ticket.hours}</p>
+        <p><strong>Payment:</strong> ${ticket.payment}</p>
+        <p><strong>Cost:</strong> ₹${ticket.cost}</p>
+      </div>
+      <div id="qr${index}" class="qr"></div>
+    `;
+    list.appendChild(div);
 
-      tbody.innerHTML = `
-        <tr>
-          <td>${user.id}</td>
-          <td>${user.username}</td>
-          <td>${user.gender}</td>
-          <td>${user.phone}</td>
-        </tr>
-      `;
-      table.style.display = 'table';
-    }
-  </script>
+    const qrData = {
+      bookingId: ticket.bookingId,
+      slot: ticket.slot
+    };
+
+    QRCode.toCanvas(document.getElementById(`qr${index}`), JSON.stringify(qrData), {
+      width: 120
+    });
+  });
+}
+</script>
 
 </body>
 </html>
