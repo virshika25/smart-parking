@@ -4,19 +4,106 @@
   <meta charset="UTF-8">
   <title>Customer Dashboard – Smart Parking</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
-    header{background:#333;color:#fff;padding:10px 20px;text-align:center}
-    .container{display:flex;justify-content:space-between;padding:40px;flex-wrap:wrap}
-    .booking-form{width:340px;min-width:280px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1)}
-    .booking-form input,select{width:100%;padding:10px;margin:10px 0;font-size:15px}
-    .slot-grid{flex:1;text-align:center;min-width:320px}
-    .row-label{margin-right:5px;font-weight:700}
-    .slot{width:30px;height:30px;border:2px solid orange;display:inline-block;margin:5px;cursor:pointer}
-    .slot.booked{background:red;cursor:not-allowed}
-    .slot.selected{background:green}
-    #slotStatus{margin-top:15px;font-weight:700;display:none}
-    #bookBtn{padding:10px 20px;background:orange;color:#fff;border:none;cursor:pointer;font-size:16px;border-radius:5px;margin-top:10px}
-    #successMsg{color:green;text-align:center;display:none;margin-top:10px}
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+    }
+
+    header {
+      background: #333;
+      color: #fff;
+      padding: 10px 20px;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-between;
+      padding: 40px;
+      flex-wrap: wrap;
+    }
+
+    .booking-form {
+      width: 340px;
+      min-width: 280px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    }
+
+    .booking-form input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 15px;
+    }
+
+    .slot-grid {
+      flex: 1;
+      text-align: center;
+      min-width: 320px;
+    }
+
+    .row-label {
+      margin-right: 5px;
+      font-weight: 700;
+    }
+
+    .slot {
+      width: 30px;
+      height: 30px;
+      border: 2px solid orange;
+      display: inline-block;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    .slot.booked,
+    .slot.vehicle-in {
+      background: red !important;
+      cursor: not-allowed;
+    }
+
+    .slot.selected {
+      background: green;
+      color: white;
+    }
+
+    #slotStatus {
+      margin-top: 15px;
+      font-weight: 700;
+      display: none;
+    }
+
+    #bookBtn {
+      padding: 10px 20px;
+      background: orange;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    #successMsg {
+      color: green;
+      text-align: center;
+      display: none;
+      margin-top: 10px;
+    }
+
+    #exitBtn {
+      margin-top: 20px;
+      padding: 8px 12px;
+      background: #444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -27,7 +114,7 @@
 
 <div class="container">
 
-  <!-- LEFT: manual form + auto‑cost -->
+  <!-- LEFT: form -->
   <div class="booking-form">
     <label>Date:
       <input type="date" id="date">
@@ -35,15 +122,17 @@
     <label>Start Time:
       <input type="time" id="time">
     </label>
-   <label>Parking Hours:
+    <label>Parking Hours:
       <input type="number" id="hours" min="1">
-     </label>
+    </label>
     <label>Parking Cost (₹50/hr):
       <input type="text" id="totalCost" readonly placeholder="Auto‑calculated">
     </label>
     <label>Payment Mode:
       <select id="paymentMode">
-        <option>Cash</option><option>UPI</option><option>Card</option>
+        <option>Cash</option>
+        <option>UPI</option>
+        <option>Card</option>
       </select>
     </label>
 
@@ -76,69 +165,108 @@
       <div class="slot" data-slot="C10"></div>
     </div>
     <div id="slotStatus"></div>
+    <button id="exitBtn">🚗 Vehicle Left – Clear Slot</button>
   </div>
-
 </div>
 
 <script>
 /* -------- user auth ---------- */
 const user = JSON.parse(localStorage.getItem('loggedInUser'));
-if(!user){ alert('You are not logged in!'); location.href='customer_login.html'; }
-else { customerName.textContent = user.name; }
+if (!user) {
+  alert('You are not logged in!');
+  location.href = 'customer_login.html';
+} else {
+  customerName.textContent = user.name;
+}
 
-/* -------- success banner from previous booking ---------- */
-if(localStorage.getItem('bookingSuccess')==='true'){
-  successMsg.style.display='block';
+/* -------- success banner ---------- */
+if (localStorage.getItem('bookingSuccess') === 'true') {
+  successMsg.style.display = 'block';
   localStorage.removeItem('bookingSuccess');
-  setTimeout(()=>{successMsg.style.display='none'},5000);
+  setTimeout(() => {
+    successMsg.style.display = 'none'
+  }, 5000);
 }
 
 /* -------- cost auto‑calculation ---------- */
 const costPerHour = 50;
 hours.addEventListener('input', () => {
-  const hrs = parseInt(hours.value,10);
-  totalCost.value = (!isNaN(hrs) && hrs>0) ? hrs * costPerHour : '';
+  const hrs = parseInt(hours.value, 10);
+  totalCost.value = (!isNaN(hrs) && hrs > 0) ? hrs * costPerHour : '';
 });
 
-/* -------- slot selection ---------- */
+/* -------- slot status handling ---------- */
 const slotStatus = document.getElementById('slotStatus');
-const slotEls    = document.querySelectorAll('.slot');
-let bookedSlots  = JSON.parse(localStorage.getItem('bookedSlots')) || [];
+const slotEls = document.querySelectorAll('.slot');
+let selectedSlot = document.getElementById('selectedSlot');
+let slotStates = JSON.parse(localStorage.getItem('slotStates')) || {};
 
-slotEls.forEach(el=>{
+// Restore slot states
+slotEls.forEach(el => {
   const id = el.dataset.slot;
-  if(bookedSlots.includes(id)) el.classList.add('booked');
+  const state = slotStates[id];
 
-  el.addEventListener('click', ()=>{
-    if(el.classList.contains('booked')){
-      slotStatus.textContent=`SLOT ${id} IS BOOKED`;
-      slotStatus.style.display='block';
+  if (state === 'booked') {
+    el.classList.add('vehicle-in');
+  }
+
+  el.addEventListener('click', () => {
+    if (slotStates[id] === 'booked') {
+      slotStatus.textContent = `SLOT ${id} IS BOOKED (Vehicle inside)`;
+      slotStatus.style.display = 'block';
       return;
     }
-    slotEls.forEach(s=>s.classList.remove('selected'));
+
+    slotEls.forEach(s => s.classList.remove('selected'));
     el.classList.add('selected');
-    selectedSlot.value=id;
-    slotStatus.textContent=`SLOT ${id} IS AVAILABLE`;
-    slotStatus.style.display='block';
+    selectedSlot.value = id;
+    slotStatus.textContent = `SLOT ${id} IS AVAILABLE`;
+    slotStatus.style.display = 'block';
   });
 });
 
-/* -------- booking ---------- */
-bookBtn.addEventListener('click', ()=>{
-  if(!selectedSlot.value){ alert('Please select a slot!'); return; }
+/* -------- book a slot ---------- */
+bookBtn.addEventListener('click', () => {
+  const id = selectedSlot.value;
+  if (!id) {
+    alert('Please select a slot!');
+    return;
+  }
+
+  // Save slot as booked
+  slotStates[id] = 'booked';
+  localStorage.setItem('slotStates', JSON.stringify(slotStates));
 
   const ticket = {
-    bookingId:'B'+Math.floor(Math.random()*10000),
-    username:user.name,email:user.email,phone:user.phone,
-    slot:selectedSlot.value,date:date.value,time:time.value,
-    hours:hours.value,payment:paymentMode.value,cost:totalCost.value
+    bookingId: 'B' + Math.floor(Math.random() * 10000),
+    username: user.name,
+    email: user.email,
+    phone: user.phone,
+    slot: id,
+    date: date.value,
+    time: time.value,
+    hours: hours.value,
+    payment: paymentMode.value,
+    cost: totalCost.value
   };
 
-  localStorage.setItem('latestTicket',JSON.stringify(ticket));
-  bookedSlots.push(ticket.slot);
-  localStorage.setItem('bookedSlots',JSON.stringify(bookedSlots));
-  localStorage.setItem('bookingSuccess','true');
-  location.href='ticket.html';
+  localStorage.setItem('latestTicket', JSON.stringify(ticket));
+  localStorage.setItem('bookingSuccess', 'true');
+  location.href = 'ticket.html';
+});
+
+/* -------- vehicle exit button ---------- */
+exitBtn.addEventListener('click', () => {
+  const id = selectedSlot.value;
+  if (!id || !slotStates[id]) {
+    alert('Select a booked slot to mark it free.');
+    return;
+  }
+
+  delete slotStates[id];
+  localStorage.setItem('slotStates', JSON.stringify(slotStates));
+  alert(`Slot ${id} is now available!`);
+  location.reload();
 });
 </script>
 
