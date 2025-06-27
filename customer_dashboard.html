@@ -9,21 +9,18 @@
       background: #f5f5f5;
       margin: 0;
     }
-
     header {
       background: #333;
       color: #fff;
       padding: 10px 20px;
       text-align: center;
     }
-
     .container {
       display: flex;
       justify-content: space-between;
       padding: 40px;
       flex-wrap: wrap;
     }
-
     .booking-form {
       width: 340px;
       min-width: 280px;
@@ -32,26 +29,21 @@
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, .1);
     }
-
-    .booking-form input,
-    select {
+    .booking-form input, select {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
       font-size: 15px;
     }
-
     .slot-grid {
       flex: 1;
       text-align: center;
       min-width: 320px;
     }
-
     .row-label {
       margin-right: 5px;
       font-weight: 700;
     }
-
     .slot {
       width: 30px;
       height: 30px;
@@ -60,24 +52,19 @@
       margin: 5px;
       cursor: pointer;
     }
-
-    .slot.booked,
     .slot.vehicle-in {
       background: red !important;
       cursor: not-allowed;
     }
-
     .slot.selected {
       background: green;
       color: white;
     }
-
     #slotStatus {
       margin-top: 15px;
       font-weight: 700;
       display: none;
     }
-
     #bookBtn {
       padding: 10px 20px;
       background: orange;
@@ -88,21 +75,11 @@
       border-radius: 5px;
       margin-top: 10px;
     }
-
     #successMsg {
       color: green;
       text-align: center;
       display: none;
       margin-top: 10px;
-    }
-
-    #exitBtn {
-      margin-top: 20px;
-      padding: 8px 12px;
-      background: #444;
-      color: #fff;
-      border: none;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -113,8 +90,7 @@
 </header>
 
 <div class="container">
-
-  <!-- LEFT: form -->
+  <!-- LEFT FORM -->
   <div class="booking-form">
     <label>Date:
       <input type="date" id="date">
@@ -135,13 +111,12 @@
         <option>Card</option>
       </select>
     </label>
-
     <input type="hidden" id="selectedSlot">
     <button id="bookBtn">Book Now</button>
     <div id="successMsg">🎉 Booking Successful!</div>
   </div>
 
-  <!-- RIGHT: slot grid -->
+  <!-- RIGHT GRID -->
   <div class="slot-grid">
     <div>
       <span class="row-label">A</span>
@@ -165,7 +140,6 @@
       <div class="slot" data-slot="C10"></div>
     </div>
     <div id="slotStatus"></div>
-    <button id="exitBtn">🚗 Vehicle Left – Clear Slot</button>
   </div>
 </div>
 
@@ -183,40 +157,48 @@ if (!user) {
 if (localStorage.getItem('bookingSuccess') === 'true') {
   successMsg.style.display = 'block';
   localStorage.removeItem('bookingSuccess');
-  setTimeout(() => {
-    successMsg.style.display = 'none'
-  }, 5000);
+  setTimeout(() => { successMsg.style.display = 'none' }, 5000);
 }
 
-/* -------- cost auto‑calculation ---------- */
+/* -------- cost auto-calculation ---------- */
 const costPerHour = 50;
 hours.addEventListener('input', () => {
   const hrs = parseInt(hours.value, 10);
   totalCost.value = (!isNaN(hrs) && hrs > 0) ? hrs * costPerHour : '';
 });
 
-/* -------- slot status handling ---------- */
+/* -------- Slot Restore + Expiry -------- */
 const slotStatus = document.getElementById('slotStatus');
 const slotEls = document.querySelectorAll('.slot');
-let selectedSlot = document.getElementById('selectedSlot');
+const selectedSlot = document.getElementById('selectedSlot');
 let slotStates = JSON.parse(localStorage.getItem('slotStates')) || {};
 
-// Restore slot states
+// Auto-expire outdated bookings
+function autoExpireSlots() {
+  const now = new Date().getTime();
+  for (const [slotId, data] of Object.entries(slotStates)) {
+    if (typeof data === 'object' && data.endTime && now > data.endTime) {
+      delete slotStates[slotId];
+    }
+  }
+  localStorage.setItem('slotStates', JSON.stringify(slotStates));
+}
+autoExpireSlots();
+
+// Restore UI states
 slotEls.forEach(el => {
   const id = el.dataset.slot;
   const state = slotStates[id];
-
-  if (state === 'booked') {
+  if (state && state.status === 'booked') {
     el.classList.add('vehicle-in');
   }
 
   el.addEventListener('click', () => {
-    if (slotStates[id] === 'booked') {
+    if (state && state.status === 'booked') {
       slotStatus.textContent = `SLOT ${id} IS BOOKED (Vehicle inside)`;
       slotStatus.style.display = 'block';
       return;
     }
-
     slotEls.forEach(s => s.classList.remove('selected'));
     el.classList.add('selected');
     selectedSlot.value = id;
@@ -225,7 +207,7 @@ slotEls.forEach(el => {
   });
 });
 
-/* -------- book a slot ---------- */
+/* -------- Booking -------- */
 bookBtn.addEventListener('click', () => {
   const id = selectedSlot.value;
   if (!id) {
@@ -233,8 +215,16 @@ bookBtn.addEventListener('click', () => {
     return;
   }
 
-  // Save slot as booked
-  slotStates[id] = 'booked';
+  const start = new Date(`${date.value}T${time.value}`);
+  const hrs = parseInt(hours.value);
+  start.setHours(start.getHours() + hrs);
+  const endTime = start.getTime();
+
+  slotStates[id] = {
+    status: 'booked',
+    endTime: endTime
+  };
+
   localStorage.setItem('slotStates', JSON.stringify(slotStates));
 
   const ticket = {
@@ -253,20 +243,6 @@ bookBtn.addEventListener('click', () => {
   localStorage.setItem('latestTicket', JSON.stringify(ticket));
   localStorage.setItem('bookingSuccess', 'true');
   location.href = 'ticket.html';
-});
-
-/* -------- vehicle exit button ---------- */
-exitBtn.addEventListener('click', () => {
-  const id = selectedSlot.value;
-  if (!id || !slotStates[id]) {
-    alert('Select a booked slot to mark it free.');
-    return;
-  }
-
-  delete slotStates[id];
-  localStorage.setItem('slotStates', JSON.stringify(slotStates));
-  alert(`Slot ${id} is now available!`);
-  location.reload();
 });
 </script>
 
