@@ -22,8 +22,6 @@
                background:#04795b; color:#fff; border:none; border-radius:6px;
                font-size:18px; cursor:pointer;}
     button:hover {background:#035f47;}
-
-    /* slight spacing between the two buttons */
     #downloadQRBtn {margin-top:15px;}
   </style>
 </head>
@@ -52,7 +50,6 @@
 <script>
   const ticket = JSON.parse(localStorage.getItem('latestTicket'));
 
-  /* ---------- helpers ---------- */
   function formatTime(t){
     const [h,m] = t.split(':');
     const d = new Date(); d.setHours(h); d.setMinutes(m);
@@ -66,7 +63,6 @@
     return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }
 
-  /* ---------- Render ticket info & QR ---------- */
   function renderTicket(){
     const infoDiv = document.getElementById('ticketDetails');
     if(!ticket){
@@ -78,14 +74,15 @@
       <p><strong>Date:</strong> ${ticket.date}</p>
       <p><strong>Time:</strong> ${formatTime(ticket.time)} – ${end}</p>
       <p><strong>Location:</strong> Slot ${ticket.slot}</p>
+      <p><strong>Vehicle No:</strong> ${ticket.vehicle || 'N/A'}</p> <!-- ✅ ADDED -->
       <p><strong>Cost:</strong> Rs. ${ticket.cost}</p>
     `;
 
-    /* Generate QR */
     const qrContainer = document.getElementById('qrcode');
-    qrContainer.innerHTML = '';            // clear old
+    qrContainer.innerHTML = '';
     const qrData = `Booking ID: ${ticket.bookingId}
 Slot: ${ticket.slot}
+Vehicle: ${ticket.vehicle || 'N/A'}   <!-- ✅ ADDED -->
 Date: ${ticket.date}
 Time: ${ticket.time}-${end}
 Cost: Rs.${ticket.cost}`;
@@ -97,10 +94,9 @@ Cost: Rs.${ticket.cost}`;
     });
   }
 
-  /* ---------- Save ticket area as PDF ---------- */
   async function saveTicketPDF(){
     const area = document.getElementById('ticketArea');
-    await new Promise(r => setTimeout(r, 300));   // wait for QR to render
+    await new Promise(r => setTimeout(r, 300));
     const canvas = await html2canvas(area, {useCORS:true});
     const imgData = canvas.toDataURL('image/png');
     const {jsPDF} = window.jspdf;
@@ -113,7 +109,6 @@ Cost: Rs.${ticket.cost}`;
     pdf.save(`Parking_Ticket_${ticket ? ticket.bookingId : Date.now()}.pdf`);
   }
 
-  /* ---------- Save only the QR as PNG ---------- */
   function saveQR(){
     const qrImg = document.querySelector('#qrcode img') ||
                   document.querySelector('#qrcode canvas');
@@ -127,17 +122,14 @@ Cost: Rs.${ticket.cost}`;
     link.click();
   }
 
-  /* ---------- Init ---------- */
   window.onload = () => {
     renderTicket();
 
-    // 1. PDF download + redirect home
     document.getElementById('downloadBtn').addEventListener('click', async () => {
       await saveTicketPDF();
-      setTimeout(() => window.location.href = 'index.html', 2000); // 2‑sec delay
+      setTimeout(() => window.location.href = 'index.html', 2000);
     });
 
-    // 2. QR‑only download + redirect home
     document.getElementById('downloadQRBtn').addEventListener('click', () => {
       saveQR();
       setTimeout(() => window.location.href = 'index.html', 2000);
