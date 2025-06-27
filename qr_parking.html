@@ -2,48 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>QR Code Parking Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Parking Validation</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      text-align: center;
+    body { font-family: Arial; background: #f4f4f4; text-align: center; padding: 30px; }
+    h2 { color: green; }
+    #qr-reader { width: 300px; margin: auto; }
+    .ticket-box {
+      background: white;
       padding: 20px;
-    }
-    #reader {
-      width: 300px;
-      margin: 0 auto;
-    }
-    .result {
       margin-top: 20px;
-      font-size: 18px;
-      color: green;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #aaa;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn-free {
+      margin-top: 15px;
+      padding: 10px;
+      background: crimson;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h2>QR Code Parking Scanner</h2>
-  <div id="reader"></div>
-  <div id="result" class="result"></div>
 
-  <script>
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("result").innerHTML = `✅ QR Code: ${decodedText}`;
-      html5QrcodeScanner.clear();
+<h2>Scan Vehicle QR to Validate Booking</h2>
+
+<div id="qr-reader"></div>
+<div id="bookingDetails" class="ticket-box" style="display:none;"></div>
+
+<script>
+const bookingBox = document.getElementById("bookingDetails");
+
+function showTicket(ticket) {
+  bookingBox.innerHTML = `
+    <h3>Booking Verified ✅</h3>
+    <p><b>Slot:</b> ${ticket.slot}</p>
+    <p><b>Name:</b> ${ticket.username}</p>
+    <p><b>Date:</b> ${ticket.date}</p>
+    <p><b>Time:</b> ${ticket.time}</p>
+    <p><b>Hours:</b> ${ticket.hours}</p>
+    <p><b>Payment:</b> ${ticket.payment}</p>
+    <p><b>Cost:</b> ₹${ticket.cost}</p>
+    <button class="btn-free" onclick="freeSlot('${ticket.slot}')">🚗 Vehicle Left – Free Slot</button>
+  `;
+  bookingBox.style.display = "block";
+}
+
+function freeSlot(slotId) {
+  let slotStates = JSON.parse(localStorage.getItem('slotStates')) || {};
+  if (slotStates[slotId]) {
+    delete slotStates[slotId];
+    localStorage.setItem('slotStates', JSON.stringify(slotStates));
+    alert(`Slot ${slotId} is now available ✅`);
+    bookingBox.innerHTML = `<h3>Slot ${slotId} cleared!</h3>`;
+  } else {
+    alert(`Slot ${slotId} is already free or not found.`);
+  }
+}
+
+// QR code scan handler
+function onScanSuccess(qrText) {
+  try {
+    const ticket = JSON.parse(qrText); // QR holds full ticket object
+    if (!ticket || !ticket.slot) {
+      alert("Invalid QR Code");
+      return;
     }
 
-    function onScanFailure(error) {
-      // console.log(`Scan error: ${error}`);
+    // Check localStorage ticket
+    const latest = JSON.parse(localStorage.getItem("latestTicket"));
+    if (latest && latest.bookingId === ticket.bookingId) {
+      showTicket(latest);
+    } else {
+      alert("Booking not found in system ❌");
     }
 
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 },
-      false
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-  </script>
+    html5QrcodeScanner.clear(); // stop scanner
+  } catch (e) {
+    alert("Invalid QR Code content");
+  }
+}
+
+// Init QR scanner
+const html5QrcodeScanner = new Html5QrcodeScanner(
+  "qr-reader", { fps: 10, qrbox: 250 });
+html5QrcodeScanner.render(onScanSuccess);
+</script>
+
 </body>
 </html>
