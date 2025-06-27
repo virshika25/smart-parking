@@ -144,36 +144,33 @@
 </div>
 
 <script>
-/* -------- user auth ---------- */
 const user = JSON.parse(localStorage.getItem('loggedInUser'));
 if (!user) {
   alert('You are not logged in!');
   location.href = 'customer_login.html';
 } else {
-  customerName.textContent = user.name;
+  document.getElementById('customerName').textContent = user.name;
 }
 
-/* -------- success banner ---------- */
 if (localStorage.getItem('bookingSuccess') === 'true') {
-  successMsg.style.display = 'block';
+  document.getElementById('successMsg').style.display = 'block';
   localStorage.removeItem('bookingSuccess');
-  setTimeout(() => { successMsg.style.display = 'none' }, 5000);
+  setTimeout(() => {
+    document.getElementById('successMsg').style.display = 'none';
+  }, 5000);
 }
 
-/* -------- cost auto-calculation ---------- */
 const costPerHour = 50;
-hours.addEventListener('input', () => {
-  const hrs = parseInt(hours.value, 10);
-  totalCost.value = (!isNaN(hrs) && hrs > 0) ? hrs * costPerHour : '';
+document.getElementById('hours').addEventListener('input', () => {
+  const hrs = parseInt(document.getElementById('hours').value, 10);
+  document.getElementById('totalCost').value = (!isNaN(hrs) && hrs > 0) ? hrs * costPerHour : '';
 });
 
-/* -------- Slot Restore + Expiry -------- */
 const slotStatus = document.getElementById('slotStatus');
 const slotEls = document.querySelectorAll('.slot');
 const selectedSlot = document.getElementById('selectedSlot');
 let slotStates = JSON.parse(localStorage.getItem('slotStates')) || {};
 
-// Auto-expire outdated bookings
 function autoExpireSlots() {
   const now = new Date().getTime();
   for (const [slotId, data] of Object.entries(slotStates)) {
@@ -185,7 +182,6 @@ function autoExpireSlots() {
 }
 autoExpireSlots();
 
-// Restore UI states
 slotEls.forEach(el => {
   const id = el.dataset.slot;
   const state = slotStates[id];
@@ -207,16 +203,15 @@ slotEls.forEach(el => {
   });
 });
 
-/* -------- Booking -------- */
-bookBtn.addEventListener('click', () => {
+document.getElementById('bookBtn').addEventListener('click', () => {
   const id = selectedSlot.value;
   if (!id) {
     alert('Please select a slot!');
     return;
   }
 
-  const start = new Date(`${date.value}T${time.value}`);
-  const hrs = parseInt(hours.value);
+  const start = new Date(`${document.getElementById('date').value}T${document.getElementById('time').value}`);
+  const hrs = parseInt(document.getElementById('hours').value);
   start.setHours(start.getHours() + hrs);
   const endTime = start.getTime();
 
@@ -232,12 +227,13 @@ bookBtn.addEventListener('click', () => {
     username: user.name,
     email: user.email,
     phone: user.phone,
+    vehicle: user.vehicle || "Not Provided", // Vehicle number added
     slot: id,
-    date: date.value,
-    time: time.value,
-    hours: hours.value,
-    payment: paymentMode.value,
-    cost: totalCost.value
+    date: document.getElementById('date').value,
+    time: document.getElementById('time').value,
+    hours: document.getElementById('hours').value,
+    payment: document.getElementById('paymentMode').value,
+    cost: document.getElementById('totalCost').value
   };
 
   localStorage.setItem('latestTicket', JSON.stringify(ticket));
