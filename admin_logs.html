@@ -1,93 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin – Parking Logs</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Release Slots – Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body{font-family:Arial,sans-serif;background:#eef;margin:0;padding:20px}
-    header{background:#333;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
-    .buttons{display:flex;gap:10px}
-    .buttons button{padding:10px 16px;background:#4CAF50;color:#fff;border:0;border-radius:5px;cursor:pointer}
-    h2{text-align:center;margin-top:30px;color:#333}
-    .actions{display:flex;justify-content:center;gap:15px;margin-top:20px}
-    .actions button{padding:10px 22px;font-size:16px;border:0;border-radius:6px;color:#fff;cursor:pointer}
-    .view-btn{background:navy}.view-btn:hover{background:#00185c}
-    .clear-btn{background:#c0392b}.clear-btn:hover{background:#962a22}
-    table{width:80%;margin:25px auto;border-collapse:collapse;display:none}
-    th,td{border:1px solid #888;padding:10px;text-align:center}
-    th{background:#444;color:#fff}
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      padding: 30px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #34495e;
+      color: white;
+    }
+    .release-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .release-btn:hover {
+      background: #c0392b;
+    }
+    .chart-container {
+      max-width: 400px;
+      margin: 30px auto;
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <div><strong>// ADMINISTRATOR //</strong></div>
-  <div class="buttons">
-    <button onclick="location.href='home.html'">Home</button>
-    <button onclick="location.href='admin_user_details.html'">User Details</button>
-    <button onclick="location.href='admin_booking.html'">Bookings</button>
-    <button onclick="location.href='admin_logs.html'">Parking Logs</button>
-    <button onclick="location.href='index.html'">Logout</button>
-  </div>
+  <h1>Release Booked Slots</h1>
 </header>
 
-<h2>Parking Logs</h2>
+<div class="container">
+  <h2>Currently Booked Slots</h2>
+  <table id="slotTable">
+    <thead>
+      <tr>
+        <th>Slot</th>
+        <th>Customer Name</th>
+        <th>Vehicle Number</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Release</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<div class="actions">
-  <button class="view-btn"  onclick="showLogs()">View All Logs</button>
-  <button class="clear-btn" onclick="clearLogs()">Clear All Logs</button>
+  <div class="chart-container">
+    <canvas id="slotChart"></canvas>
+  </div>
 </div>
 
-<table id="logTable">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Ticket ID</th>
-      <th>Name</th>
-      <th>Slot Name</th>
-    </tr>
-  </thead>
-  <tbody id="logBody"></tbody>
-</table>
-
 <script>
-  // ---------- helpers ----------
-  function getLogs(){
-    return JSON.parse(localStorage.getItem("parkingLogs") || "[]");
-  }
+  const slotStates = JSON.parse(localStorage.getItem('slotStates')) || {};
+  const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+  const tbody = document.querySelector("#slotTable tbody");
 
-  // ---------- main render ----------
-  function showLogs(){
-    const logs  = getLogs();
-    const tbody = document.getElementById("logBody");
-    const table = document.getElementById("logTable");
-    tbody.innerHTML = "";
-
-    if(logs.length===0){
-      tbody.innerHTML = '<tr><td colspan="4">No parking logs found.</td></tr>';
-    }else{
-      logs.forEach(l=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${l.id || "-"}</td>
-          <td>${l.ticketId || "-"}</td>
-          <td>${l.name || "-"}</td>
-          <td>${l.slotName || "-"}</td>
+  function renderTable() {
+    tbody.innerHTML = '';
+    for (const [slotId, data] of Object.entries(slotStates)) {
+      if (data.status === 'booked') {
+        const user = users.find(u => u.email === data.email);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${slotId}</td>
+          <td>${user?.username || 'N/A'}</td>
+          <td>${user?.vehicleNumber || 'N/A'}</td>
+          <td>${data.date}</td>
+          <td>${data.time}</td>
+          <td><button class="release-btn" onclick="releaseSlot('${slotId}')">Release</button></td>
         `;
-        tbody.appendChild(tr);
-      });
+        tbody.appendChild(row);
+      }
     }
-    table.style.display = "table";
+    updateChart();
   }
 
-  // ---------- clear logs ----------
-  function clearLogs(){
-    if(confirm("Delete ALL parking logs?")){
-      localStorage.removeItem("parkingLogs");
-      document.getElementById("logTable").style.display="none";
-      alert("All parking logs cleared.");
+  function releaseSlot(slotId) {
+    if (confirm(`Are you sure you want to release slot ${slotId}?`)) {
+      delete slotStates[slotId];
+      localStorage.setItem('slotStates', JSON.stringify(slotStates));
+      renderTable();
     }
   }
+
+  // Chart.js Doughnut Chart
+  let chart;
+  function updateChart() {
+    const totalSlots = 20; // Change this if your slot count is different
+    const booked = Object.values(slotStates).filter(s => s.status === 'booked').length;
+    const available = totalSlots - booked;
+
+    const data = {
+      labels: ['Booked', 'Available'],
+      datasets: [{
+        data: [booked, available],
+        backgroundColor: ['#e74c3c', '#2ecc71'],
+        hoverOffset: 4
+      }]
+    };
+
+    const config = {
+      type: 'doughnut',
+      data,
+      options: {
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    };
+
+    if (chart) {
+      chart.data = data;
+      chart.update();
+    } else {
+      chart = new Chart(document.getElementById('slotChart'), config);
+    }
+  }
+
+  // Initial load
+  renderTable();
 </script>
 
 </body>
